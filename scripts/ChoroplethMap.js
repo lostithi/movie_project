@@ -2,93 +2,101 @@ export default class ChoroplethMap {
   constructor(container, width, height) {
     this.width = width;
     this.height = height;
-
-    // Create an SVG inside the container
+    // Create SVG container
     this.svg = d3.select(container)
       .append("svg")
       .attr("width", width)
-      .attr("height", height)
-      .attr("viewBox", `0 0 ${width} ${height}`)
-      .style("max-width", "100%")
-      .style("height", "auto")
-      .on("click", () => this.reset());  // Reset map on click
+      .attr("height", height);
 
-    // Create a group for the map elements
-    this.g = this.svg.append("g");
-
-    // Define zoom behavior (optimize zoom transformation logic)
-    this.zoom = d3.zoom()
-      .scaleExtent([1, 8])  // Min and max zoom levels
-      .on("zoom", (event) => this.zoomed(event));
-
-    // Define map projection
-    this.projection = d3.geoNaturalEarth1()
-      .scale(150)
+    // Define projection and path generator
+    const projection = d3.geoMercator()
+      .scale(70)
+      .center([0, 20])
       .translate([width / 2, height / 2]);
+    const path = d3.geoPath().projection(projection);
 
-    // Define path generator
-    this.path = d3.geoPath().projection(this.projection);
+    // Data and color scale
+    const colorScale = d3.scaleThreshold()
+      .domain([0, 2, 4, 6, 8, 10]) // This should be based on the vote_average range
+      .range(d3.schemeBlues[7]);
+      // .range(d3.schemeSet1);
 
-    // Apply zoom to the SVG
-    this.svg.call(this.zoom);
+    // Load the data asynchronously
+    Promise.all([
+      d3.json("data/world.geojson"),
+      d3.json("data/movies_cleaned.json")
+    ]).then(([topo, moviesData]) => {
+      // Create a Map to hold average vote data for each country
+      const data = new Map();
+      // Process movie data
+      moviesData.forEach(d => {
+        // Loop through each production country
+        d.production_countries.forEach(country => {
+          // Get country code from country name (adjust as needed)
+          const countryCode = this.getCountryCode(country); // Function to map country name to code
+          if (countryCode) {
+            if (!data.has(countryCode)) {
+              data.set(countryCode, []);
+            }
+            data.get(countryCode).push(d.vote_average); // Store vote_average for each country
+          }
+        });
+      });
 
-    // Load and render the map
-    this.loadMap();
-  }
+      // Mouse over effect to highlight the country
+      const mouseOver = function (event, d) {
+        d3.selectAll(".Country")
+          .transition()
+          .duration(200)
+          .style("opacity", 0.5);
 
-  loadMap() {
-    // Use a reduced or simplified version of GeoJSON data for better performance
-    d3.json("data/countries.geojson").then(geojson => {
-      this.countries = this.g.selectAll("path")
-        .data(geojson.features)
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .style("opacity", 1)
+          .style("stroke", "black");
+      };
+      const mouseLeave = function (event, d) {
+        d3.selectAll(".Country")
+          .transition()
+          .duration(200)
+          .style("opacity", 0.8);
+
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .style("stroke", "blue");
+      };
+      // Draw the map and assign colors based on the movie data
+      this.svg.append("g")
+        .selectAll("path")
+        .data(topo.features)
         .enter()
         .append("path")
-        .attr("d", this.path)
-        .attr("fill", "#d3d3d3")
-        .attr("stroke", "#000")
-        .attr("stroke-width", 0.5)
+        .attr("d", path) // Set path using the projection
+        .attr("fill", (d) => {
+          const countryData = data.get(d.id) || [];
+          const avgVote = countryData.length > 0 ? d3.mean(countryData) : 0; // Calculate average vote for the country
+          return colorScale(avgVote); // Set the color based on average vote
+        })
+        .style("stroke", "transparent")
         .attr("cursor", "pointer")
-        .on("click", (event, d) => this.clicked(event, d));
-
-      // Add tooltips (hover over countries to see names)
-      this.countries.append("title")
-        .text(d => d.properties.name);
+        .attr("class", "Country")
+        .on("mouseover", mouseOver)
+        .on("mouseLeave", mouseLeave);
+    }).catch((error) => {
+      console.error("Error loading the data: ", error);
     });
   }
 
-  // Optimized zoom handler (avoid transforming each path individually)
-  zoomed(event) {
-    const { transform } = event;
-    this.g.attr("transform", transform);
-    this.g.attr("stroke-width", 1 / transform.k);
-  }
+  // Helper function to map country name to country code
+  getCountryCode(countryName) {
+    const countryMapping = {
+      "United States of America": "USA",
+      "United Kingdom": "England",
 
-  // Reset map to default view
-  reset() {
-    this.countries.transition().style("fill", "#d3d3d3");
-    this.svg.transition().duration(750).call(
-      this.zoom.transform,
-      d3.zoomIdentity,
-      d3.zoomTransform(this.svg.node()).invert([this.width / 2, this.height / 2])
-    );
-  }
-
-  // Optimized click handler
-  clicked(event, d) {
-    const [[x0, y0], [x1, y1]] = this.path.bounds(d);
-
-    event.stopPropagation();
-    this.countries.transition().style("fill", "#d3d3d3");  // Reset all countries
-    d3.select(event.target).transition().style("fill", "red");  // Highlight selected
-
-    // Zoom to selected country
-    this.svg.transition().duration(750).call(
-      this.zoom.transform,
-      d3.zoomIdentity
-        .translate(this.width / 2, this.height / 2)
-        .scale(Math.min(8, 0.9 / Math.max((x1 - x0) / this.width, (y1 - y0) / this.height)))
-        .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
-      d3.pointer(event, this.svg.node())
-    );
+      // Add more mappings as needed
+    };
+    return countryMapping[countryName] || null; // Return null if no match found
   }
 }
