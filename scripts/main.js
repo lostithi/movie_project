@@ -17,7 +17,14 @@ let bumpChart = new BumpChart('#bump-chart', chartWidth, chartHeight, chartMargi
 let scatterPlot = new ScatterPlot('#scatter-plot', chartWidth, chartHeight, chartMargin);
 let bubbleChart = new BubbleChart('#bubble-chart', 1000, 500, chartMargin);
 let circularHeatMap = new CircularHeatMap('#circular-heatmap', chartWidth, chartHeight, chartMargin);
-let choroplethMap = new ChoroplethMap('#choropleth-map', 960, 500);
+
+//choropleth
+let topoData = await d3.json('./data/countries-50m.json');
+let ithimovies = await d3.json("data/ithi_movies_cleaned.json");
+let countries = topojson.feature(topoData, topoData.objects.countries);
+console.log(countries);  // Check the structure
+let choroplethMap = new ChoroplethMap('#choropleth-map', 1000, 500);
 
 //render charts
 bubbleChart.setLabels('Average Vote Score', 'Total Revenue').render(movies);
+choroplethMap.baseMap(countries, d3.geoNaturalEarth1);
