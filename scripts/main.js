@@ -27,4 +27,12 @@ let choroplethMap = new ChoroplethMap('#choropleth-map', 1000, 500);
 
 //render charts
 bubbleChart.setLabels('Average Vote Score', 'Total Revenue').render(movies);
+<<<<<<< HEAD
 choroplethMap.baseMap(countries, d3.geoNaturalEarth1);
+=======
+
+// Initialize and render the choropleth map
+choroplethMap
+    .baseMap(countries, d3.geoNaturalEarth1)
+    .renderChoropleth(ithimovies); // Passing the ithimovies data to the renderChoropleth method
+>>>>>>> 4c8e5e8 (chromo file update)
