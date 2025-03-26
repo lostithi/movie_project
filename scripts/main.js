@@ -1,38 +1,34 @@
-// Import chart modules
-import BumpChart from './BumpChart.js';
-import ScatterPlot from './ScatterPlot.js';
-import BubbleChart from './BubbleChart.js';
-import CircularHeatMap from './CircularHeatMap.js';
+
 import ChoroplethMap from './ChoroplethMap.js';
 
 //chart dimensions
 const chartWidth = 800;
-const chartHeight = 400;
+const chartHeight = 450;
 const chartMargin = { top: 60, right: 60, bottom: 80, left: 80 };
+const bumpMargin = { top: 30, right: 60, bottom: 50, left: 80 };
 
-let movies = await d3.json("data/movies_cleaned.json");
+let movies = await d3.json('data/movies_cleaned.json');
 
-// Initialize charts
-let bumpChart = new BumpChart('#bump-chart', chartWidth, chartHeight, chartMargin);
-let scatterPlot = new ScatterPlot('#scatter-plot', chartWidth, chartHeight, chartMargin);
-let bubbleChart = new BubbleChart('#bubble-chart', 1000, 500, chartMargin);
-let circularHeatMap = new CircularHeatMap('#circular-heatmap', chartWidth, chartHeight, chartMargin);
+let choroplethMap = new ChoroplethMap('#choropleth-map', chartWidth, chartHeight);
+
+// highlighting the line corresponding to the genre
+const highlightGenre = (e,d)=>{
+    bumpChart.highlightLines([d.genre]);
+}
+// removing the hover effect
+const rmvHighlightGenre = () => {
+    bumpChart.highlightLines([]);
+};
+
+
 
 //choropleth
 let topoData = await d3.json('./data/countries-50m.json');
 let ithimovies = await d3.json("data/ithi_movies_cleaned.json");
 let countries = topojson.feature(topoData, topoData.objects.countries);
 console.log(countries);  // Check the structure
-let choroplethMap = new ChoroplethMap('#choropleth-map', 1000, 500);
-
-//render charts
-bubbleChart.setLabels('Average Vote Score', 'Total Revenue').render(movies);
-<<<<<<< HEAD
-choroplethMap.baseMap(countries, d3.geoNaturalEarth1);
-=======
 
 // Initialize and render the choropleth map
 choroplethMap
     .baseMap(countries, d3.geoNaturalEarth1)
     .renderChoropleth(ithimovies); // Passing the ithimovies data to the renderChoropleth method
->>>>>>> 4c8e5e8 (chromo file update)

@@ -1,39 +1,13 @@
-<<<<<<< HEAD
-export default class ChoroplethMap{
-    constructor(container, width, height){
-        this.width = width;
-        this.height = height;
 
-    // svg
-    this.svg = d3.select(container)
-        .append('svg')
-        .classed('map', true)
-        .attr('width', width)
-        .attr('height', height)
+// Showing geographical details on the bottom 1,000 ranked movies by vote average)
+// The map shows their countries of production.
+// For each country, when a user hovers or selects a location on the map, it shows the following :
+// - Country name
+// - Average Movie Runtime(for movies produced in that country)
+// - Least Rated Movie title
+// - Total number of movies produced in that country 
+// - Number of poorly rated movies produced in that country.
 
-    // base map
-    this.mapGroup = this.svg.append('g')
-        .classed('map', true);
-
-    this.#setZoom();
-
-    }
-
-    // Function to set the zoom behavior
-    #setZoom() {
-        this.zoom = d3.zoom()
-            .extent([[0, 0], [this.width, this.height]])
-            .translateExtent([[0, 0], [this.width, this.height]])
-            .scaleExtent([1, 8])
-            .on('zoom', ({ transform }) => {
-                // Apply transform to the map group
-                this.mapGroup.attr('transform', transform);
-            });
-        this.svg.call(this.zoom);
-    }
-
-    // Function to render the base map
-=======
 export default class ChoroplethMap {
     constructor(container, width, height) {
         this.width = width;
@@ -49,7 +23,8 @@ export default class ChoroplethMap {
         this.background = this.svg.append('rect')
             .attr('width', width)
             .attr('height', height)
-            .attr('fill', 'transparent');
+            .attr('fill', 'transparent')
+            .style('cursor', 'default');
 
         // base country group
         this.mapGroup = this.svg.append('g')
@@ -58,7 +33,8 @@ export default class ChoroplethMap {
         // tooltip for hover
         this.tooltip = d3.select(container)
             .append("div")
-            .attr("class", "tooltip");
+            .attr("class", "tooltip")
+            .style("opacity", 0);
 
         // info for selected country initially hidden
         this.infoPanel = d3.select(container)
@@ -67,71 +43,10 @@ export default class ChoroplethMap {
 
         this.#setZoom();    // Initial zoom behavior
         this.selectedCountry = null;
-        this.isZoomedToCountry = false;
-    }
-
-    // Function for zoom behavior
-    #setZoom() {
-        this.zoom = d3.zoom()
-            .extent([[0, 0], [this.width, this.height]])
-            .translateExtent([[-this.width, -this.height], [this.width * 2, this.height * 2]])
-            .scaleExtent([1, 8])
-            .on('zoom', ({ transform }) => {
-                // Applying transform to group
-                this.mapGroup.attr('transform', transform);
-            });
-        this.svg.call(this.zoom);
-        
-        // reset zoom on clicking background
-        this.background.on('click', () => {
-            if (this.isZoomedToCountry) {
-                this.resetZoom();
-            }
-        });
-    }
-
-    // Function to zoom to a specific country
-    zoomToCountry(countryFeature) {
-        if (!countryFeature) return;
-        
-        // Zoom bounding box of a country
-        const bounds = this.pathGen.bounds(countryFeature);
-        const dx = bounds[1][0] - bounds[0][0];
-        const dy = bounds[1][1] - bounds[0][1];
-        const x = (bounds[0][0] + bounds[1][0]) / 2;
-        const y = (bounds[0][1] + bounds[1][1]) / 2;
-        
-        const scale = Math.min(8, 0.9 / Math.max(dx / this.width, dy / this.height));
-        const translate = [this.width / 2 - scale * x, this.height / 2 - scale * y];
-        
-        // Apply the transformation with a transition
-        this.svg.transition()
-            .duration(750)
-            .call(
-                this.zoom.transform,
-                d3.zoomIdentity
-                    .translate(translate[0], translate[1])
-                    .scale(scale)
-            );
-        
-        this.isZoomedToCountry = true;
-    }
-
-    // Function to reset zoom 
-    resetZoom() {
-        this.svg.transition()
-            .duration(750)
-            .call(
-                this.zoom.transform,
-                d3.zoomIdentity
-            );
-        
-        this.isZoomedToCountry = false;
-        this.clearSelection();  // DESELECT any selected countries
+        this.isZoomedToCountry = false; 
     }
 
     // base map render
->>>>>>> 4c8e5e8 (chromo file update)
     #renderMap(projection) {
         this.projection = projection()
             .fitSize([this.width, this.height], this.regions);
@@ -145,94 +60,46 @@ export default class ChoroplethMap {
             .classed('regions', true)
             .attr('d', this.pathGen);
     }
-<<<<<<< HEAD
-    //    Function to render the choropleth map
-        #renderChoropleth() {
-            // Create a color scale for the choropleth
-            const colorScale = d3.scaleSequential(d3.interpolateBlues)
-                .domain([0, d3.max(this.data, d => d.value)]);
-    
-            // Bind data to regions and apply color based on value
-            this.mapGroup.selectAll('path.regions')
-                .attr('fill', d => {
-                    const countryData = this.data.find(item => item.id === d.id);
-                    return countryData ? colorScale(countryData.value) : '#ccc';    // Default color for missing data
-                });
-        }
 
-        #processData(){
-            let movieList = await d3.json("data/ithi_movies_cleaned.json");
-            let sortedMovies = ithimovies.sort((a,b) => a.vote_average - b.vote_average).slice(0, 1000);    //Sorting and getting bottom 1000
-            console.log(sortedMovies);
-            let movieByCountry = {};
-            sortedMovies.forEach(i => {
-                let countryList = ithimovies.production_countries.map(d => d.title);
-                countries.forEach(country) => {
-                    if(!movieByCountry[country]){
-                        movieByCountry[country] = {
-                            name: country,
-                            totalMovies: 0,
-                            poorlyRatedMovies: 0,
-                            totalRuntime: 0,
-                            leastRatedMovie: { title: movie.title, vote: movie.vote_average },
-                        };
-                    }
-                }
-            });
-
-        }
-
-        
-        // Renders a base (background) map
-        baseMap(regions = [], projection = d3.geoNaturalEarth) {
-            this.regions = regions;
-            this.#renderMap(projection);
-            return this;
-        }
-
-        // Renders a choropleth map
-        renderChoropleth(dataset) {
-            this.data = ithimovies;
-            this.#renderChoropleth();
-            return this;
-        }
-}
-=======
-
-    // Movie data to country statistics mapping
     #processMovieData(movies) {
-        // Mapping between country names and ISO codes.
+        const totalmoviesofall = {};
+        movies.forEach(movie => {
+            if (Array.isArray(movie.production_countries)) {
+                movie.production_countries.forEach(country => {
+                    totalmoviesofall[country] = (totalmoviesofall[country] || 0) + 1;
+                });
+            }
+        });
+        const bottomMovies = movies
+            .sort((a, b) => a.vote_average - b.vote_average)
+            .slice(0, 1000);
+    
+        // Mapping between the country and ISO codes
         const countryNameToId = {};
-        this.regions.features.forEach(feature => {
-            if (feature.properties && feature.properties.name) {
-                countryNameToId[feature.properties.name] = feature.id;
+        this.regions.features.forEach(code => {
+            if (code.properties && code.properties.name) {
+                countryNameToId[code.properties.name] = code.id;
+                // console.log(`${code.properties.name}: ${code.id}`);
             }            
         });
-        // Data for each country processed here
-        const countryStats = {};
-        
-        movies.forEach(movie => {
+        const countryStats = {};    // forcountry processing
+        bottomMovies.forEach(movie => {
             movie.production_countries.forEach(country => {
                 if (!countryStats[country]) {
                     countryStats[country] = {
                         id: countryNameToId[country],
                         name: country,
                         totalMovies: 0,
+                        totalVoteSum: 0,
                         totalRuntime: 0,
-                        poorlyRatedMovies: 0,
                         movies: [],
-                        value: 0 // This will be the count of movies for choropleth coloring
+                        totalMoviesInData:totalmoviesofall[country] ||0
                     };
                 }
                 
                 countryStats[country].totalMovies += 1;
-                countryStats[country].value += 1;
+                countryStats[country].totalVoteSum += movie.vote_average;
                 countryStats[country].totalRuntime += movie.runtime || 0;
-                
-                // Assuming poorly rated movies are those with vote_average < 5
-                if (movie.vote_average < 5) {
-                    countryStats[country].poorlyRatedMovies += 1;
-                }
                 
                 countryStats[country].movies.push({
                     title: movie.title,
@@ -242,100 +109,174 @@ export default class ChoroplethMap {
             });
         });
         
-        // Calculate averages and find least rated movie
+        // Calculate averages and least rated movies
         Object.values(countryStats).forEach(country => {
+            country.avgVote = country.totalVoteSum / country.totalMovies;
             country.avgRuntime = country.totalRuntime / country.totalMovies;
             country.movies.sort((a, b) => a.vote_average - b.vote_average);
             country.leastRatedMovie = country.movies[0]?.title || 'Unknown';
             country.leastRatedScore = country.movies[0]?.vote_average || 'N/A';
+        // console.log(country);  
         });
-        
+        console.log(countryStats);  
         return Object.values(countryStats);
     }
 
     #renderChoropleth() {
-        const self = this;
-        
-        // Color scale 
-        const colorScale = d3.scaleSequential(d3.interpolateBlues)
-            .domain([0, d3.max(this.countryData, d => d.value)]);
-        
-        console.log(this.countryData);
-        
-        // Bind data to regions and apply color based on value
+        const colorScale = d3.scaleSequential(d3.interpolatePlasma)
+            .domain([
+                d3.min(this.countryData, d => d.avgVote), 
+                d3.max(this.countryData, d => d.avgVote)
+            ]);
+            console.log(this.countryData);
+    
         this.mapGroup.selectAll('path.regions')
             .attr('fill', d => {
                 const countryData = this.countryData.find(item => item.id === d.id);
-                return countryData ? colorScale(countryData.value) : '#ccc'; // Default color for missing data
+                return countryData ? colorScale(countryData.avgVote) : 'grey';
             })
-            .on('mouseover', function(event, d) {
-                // Highlight country
-                d3.select(this)
-                    .classed('highlighted', true);
-                
-                const countryData = self.countryData.find(item => item.id === d.id);
-                if (countryData) {
-                    self.tooltip
-                        .style("opacity", 0.9)
+
+            .on('mouseover', (event, d) => {
+                const path = d3.select(event.currentTarget);    //Target country path
+                path.attr('stroke-width', 1.5)
+                .attr('stroke', '#000');                
+                const countryData = this.countryData.find(item => item.id === d.id);    //connects country using the ID
+                if (countryData) {      //SELECTION and zoom fpr non included data countries handled  
+                    this.tooltip
+                        .style("opacity", 1)
                         .html(`
-                            <strong>${countryData.name}</strong><br/>
-                            Total Movies: ${countryData.totalMovies}<br/>
-                            Average Runtime: ${Math.round(countryData.avgRuntime)} min
+                        <div>
+                        <h3>${countryData.name}</h3>
+                        <div class="tooltip-grid">
+
+                                <span>Total Movies:</span>
+                                <span>${countryData.totalMoviesInData}</span>
+                                
+                                <span>Poorly rated Movies:</span>
+                                <span>${countryData.totalMovies}</span>
+                                
+                                <span>Avg Runtime:</span>
+                                <span>${Math.round(countryData.avgRuntime)} minutes</span>
+                            
+                                <span>Avg Rating:</span>
+                                <span>${countryData.avgVote.toFixed(3)}</span>
+                            
+                                <span>Least Rated Movie:</span>
+                                <span>"${countryData.leastRatedMovie}" (${countryData.leastRatedScore}/10)</span>
+                                
+                            </div>
+                        </div>
                         `)
-                        .style("left", (event.pageX + 15) + "px")
+                        .style("left", (event.pageX + 15) + "px")   //Placement 
                         .style("top", (event.pageY - 30) + "px");
                 }
             })
-            .on('mouseout', function() {
-                // Remove highlight if not the selected country
-                if (self.selectedCountry !== d3.select(this).datum().id) {
-                    d3.select(this).classed('highlighted', false);
+            .on('mouseout', (event, d) => {
+                const path = d3.select(event.currentTarget);
+                if (this.selectedCountry !== d.id) {
+                    path.attr('stroke-width', 0.5).attr('stroke', '#333');
                 }
-                self.tooltip.style("opacity", 0);
+                this.tooltip.style("opacity", 0);
             })
-            .on('click', function(event, d) {
-                event.stopPropagation(); // Prevent the click from bubbling to the background
+               
+            .on('click', (event, d) => {
+                const path = d3.select(event.currentTarget);
+    
+                if (this.selectedCountry) {         //one at a time selection
+                    this.mapGroup.selectAll('path.regions')
+                        .filter(region => region.id === this.selectedCountry)
+                        .attr('stroke-width', 0.5)
+                        .attr('stroke', '#333');
+                }             
+                this.selectedCountry = d.id;    //only selected new path 
+                path.attr('stroke-width', 2).attr('stroke', '#000');
                 
-                // Deselect previous country
-                if (self.selectedCountry) {
-                    self.mapGroup.selectAll('path.regions')
-                        .filter(region => region.id === self.selectedCountry)
-                        .classed('selected', false);
-                }
-                
-                // Select new country
-                self.selectedCountry = d.id;
-                d3.select(this).classed('selected', true);
-                
-                const countryData = self.countryData.find(item => item.id === d.id);
-                if (countryData) {
-                    self.infoPanel
-                        .style("display", "block")
+                const countryData = this.countryData.find(item => item.id === d.id);
+                if (countryData && countryData.totalMovies > 0) {
+                    this.infoPanel
+                        .style("display", "none")
                         .html(`
                             <h3>${countryData.name}</h3>
-                            <p><strong>Total Movies:</strong> ${countryData.totalMovies}</p>
-                            <p><strong>Poorly Rated Movies:</strong> ${countryData.poorlyRatedMovies}</p>
-                            <p><strong>Average Runtime:</strong> ${Math.round(countryData.avgRuntime)} minutes</p>
-                            <p><strong>Least Rated Movie:</strong> "${countryData.leastRatedMovie}" (${countryData.leastRatedScore}/10)</p>
+                            <div class="info-grid">
+                                <span>Total Movies:</span>
+                                <span>${countryData.totalMoviesInData}</span>
+                            
+                                <span>Poorly rated Movies:</span>
+                                <span>${countryData.totalMovies}</span>
+                                
+                                <span>Avg Runtime:</span>
+                                <span>${Math.round(countryData.avgRuntime)} minutes</span>
+                            
+                                <span>Avg Rating:</span>
+                                <span>${countryData.avgVote.toFixed(3)}</span>
+                            
+                                <span>Least Rated Movie:</span>
+                                <span>"${countryData.leastRatedMovie}" (${countryData.leastRatedScore}/10)</span>
+                            </div>
                         `);
-                    
-                    // Zoom to the selected country
-                    self.zoomToCountry(d);
-                } else {
-                    self.infoPanel.style("display", "none");
-                }
+                        this.zoomToCountry(d);
+            } 
             });
-            
-        // Add a legend
-        this.#createLegend(colorScale);
-    }
     
-    // Legend for the map
+        this.#createLegend(colorScale); 
+    }    
+
+    #setZoom() {
+        this.zoom = d3.zoom()
+            .extent([[0, 0], [this.width, this.height]])
+            .translateExtent([[-(this.width * 0.4), -(this.height * 0.4)], [(this.width * 1.3), (this.height * 1.3)]])
+            .scaleExtent([1, 8])
+            .on('zoom', ({ transform }) => {
+                // Applying transform tiogroup
+                this.mapGroup.attr('transform', transform);
+            });
+        this.svg.call(this.zoom);
+    
+        this.background.on('click', () => {     // reset zoom on clicking background
+            if (this.isZoomedToCountry) {   //Flag for check on zoomtoCountry and reset methods
+                this.resetZoom();   
+            }
+        });
+    }
+
+    zoomToCountry(countryFeature) {    
+        if (!countryFeature) return;
+        const bounds = this.pathGen.bounds(countryFeature);     //ZOOMBOX
+        const dx = bounds[1][0] - bounds[0][0];     //Country idth and height
+        const dy = bounds[1][1] - bounds[0][1];
+        const x = (bounds[0][0] + bounds[1][0]) / 2;        //Centre of the box
+        const y = (bounds[0][1] + bounds[1][1]) / 2;
+        
+        const scale = Math.min(8, 0.9 / Math.max(dx / this.width, dy / this.height));
+        const translate = [this.width / 2 - scale * x, this.height / 2 - scale * y];        //Centering
+        
+        this.svg.transition()
+            .duration(750)
+            .call(
+                this.zoom.transform,d3.zoomIdentity
+                    .translate(translate[0], translate[1])
+                    .scale(scale)
+            );
+        
+        this.isZoomedToCountry = true;
+    }
+
+    resetZoom() {
+        this.svg.transition()
+            .duration(750)
+            .call(
+                this.zoom.transform,d3.zoomIdentity
+            );
+        
+        this.isZoomedToCountry = false;
+        this.clearSelection();  //DESELECT any selected countries on reste
+    }
+
     #createLegend(colorScale) {  
         const legendWidth = 200;
         const legendHeight = 15;
         const legendPosition = {
-            x: this.width - legendWidth - 20,
+            x: this.width - legendWidth - 590,
             y: this.height - 50
         };
         
@@ -343,81 +284,54 @@ export default class ChoroplethMap {
             .attr("class", "legend")
             .attr("transform", `translate(${legendPosition.x}, ${legendPosition.y})`);
             
-        // Create a linear gradient for the legend
+        //  gradient for the legend
         const defs = this.svg.append("defs");
         const linearGradient = defs.append("linearGradient")
-            .attr("id", "legend-gradient")
+                .attr("id", "legend-gradient")
             .attr("x1", "0%")
             .attr("y1", "0%")
             .attr("x2", "100%")
             .attr("y2", "0%");
             
-        // Set the color stops
-        const max = d3.max(this.countryData, d => d.value);
+        const minVote = d3.min(this.countryData, d => d.avgVote);
+        const maxVote = d3.max(this.countryData, d => d.avgVote);
         for (let i = 0; i <= 10; i++) {
+            const vote = minVote + (maxVote - minVote) * (i / 10);  //Interval calc for Gradient
             linearGradient.append("stop")
                 .attr("offset", `${i * 10}%`)
-                .attr("stop-color", colorScale(max * i / 10));
+                .attr("stop-color", colorScale(vote));
         }
         
-        // Draw the rectangle with the gradient
-        legend.append("rect")
+        legend.append("rect")   //Rectangle for legend:)
             .attr("width", legendWidth)
             .attr("height", legendHeight)
-            .style("fill", "url(#legend-gradient)");
+                .style("fill", "url(#legend-gradient)");
             
-        // Add annotations
         legend.append("text")
             .attr("x", 0)
             .attr("y", -5)
-            .style("text-anchor", "start")
-            .text("Few Movies");
+            .style("font-size", "12px")
+            .text(`Low Avg-Rating`);
             
         legend.append("text")
             .attr("x", legendWidth)
             .attr("y", -5)
             .style("text-anchor", "end")
-            .text("Many Movies");
-            
-
+            .style("font-size", "12px")
+            .text(`High`);
     }
-
-    // Renders a base (background) map
-    baseMap(regions = [], projection = d3.geoNaturalEarth1) {
-        this.regions = regions;
-        this.#renderMap(projection);
-        return this;
-    }
-
-    // Renders a choropleth map
-    renderChoropleth(movies) {
-        this.rawMovies = movies;
-        this.countryData = this.#processMovieData(movies);
-        this.#renderChoropleth();
-        return this;
-    }
-    
-    // Method to clear selection
-    clearSelection() {
+    clearSelection() {  //Deselect a country when zooming out
         if (this.selectedCountry) {
             this.mapGroup.selectAll('path.regions')
                 .filter(region => region.id === this.selectedCountry)
-                .classed('selected', false);
-                
-            this.selectedCountry = null;
+                .attr('stroke-width', 0.5)
+                .attr('stroke', '#333');
+            this.selectedCountry = null;    //reset
             this.infoPanel.style("display", "none");
         }
         return this;
     }
     
-    // Method to update data
-    updateData(movies) {
-        this.clearSelection();
-        this.renderChoropleth(movies);
-        return this;
-    }
-    
-    // Method to resize the map
     resize(width, height) {
         this.width = width;
         this.height = height;
@@ -438,5 +352,18 @@ export default class ChoroplethMap {
             
         return this;
     }
+        // Renders a base map
+        baseMap(regions = [], projection = d3.geoNaturalEarth1) {
+            this.regions = regions;
+            this.#renderMap(projection);
+            return this;
+        }
+    
+        // Renders a choropleth map
+        renderChoropleth(movies) {
+            this.countryData = this.#processMovieData(movies);
+            this.#renderChoropleth();
+            return this;
+        }
 }
->>>>>>> 4c8e5e8 (chromo file update)
+
